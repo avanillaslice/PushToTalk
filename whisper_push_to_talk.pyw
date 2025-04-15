@@ -30,18 +30,14 @@ if sys.platform == 'win32':
         'WorkerW',            # Desktop
         'Button',             # Buttons
         'ToolbarWindow32',    # Toolbars
-        '#32770'              # Dialog boxes without text fields
+        '#32770',             # Dialog boxes without text fields
+        'CabinetWClass',      # Windows Explorer
+        'ExploreWClass'       # Windows Explorer (browse mode)
     ]
     
     def is_text_field_focused():
         """Simple check that allows typing most places except obvious non-text areas"""
         try:
-            # Default to allowing typing - more permissive
-            return True
-            
-            # The code below is commented out because it's too restrictive
-            # Uncomment and modify if you want more control
-            """
             # Get foreground window
             fg_window = GetForegroundWindow()
             if not fg_window:
@@ -52,15 +48,29 @@ if sys.platform == 'win32':
             ctypes.windll.user32.GetClassNameW(fg_window, class_name, 256)
             class_str = class_name.value
             
+            # Debug: Log the window class name
+            print(f"[DEBUG] Current window class: {class_str}")
+            
             # If the window class is in our non-text list, don't type
             if class_str in non_text_classes:
+                print(f"[DEBUG] Blocked typing in non-text window: {class_str}")
+                return False
+            
+            # Additional check for Explorer windows that might have different classes
+            window_text = ctypes.create_unicode_buffer(512)
+            ctypes.windll.user32.GetWindowTextW(fg_window, window_text, 512)
+            window_title = window_text.value
+            
+            # If the window title contains "Explorer" or specific folder paths
+            if "Explorer" in window_title or "This PC" in window_title or ":\\" in window_title:
+                print(f"[DEBUG] Blocked typing in Explorer-like window: {window_title}")
                 return False
                 
             # Allow typing for all other windows
             return True
-            """
-        except Exception:
+        except Exception as e:
             # If there's any error, default to allowing typing
+            print(f"[DEBUG] Error in text field detection: {str(e)}")
             return True
 else:
     # On non-Windows platforms, always allow typing
