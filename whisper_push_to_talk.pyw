@@ -18,6 +18,7 @@ from threading import Thread
 # For Windows-specific text field detection
 if sys.platform == 'win32':
     import ctypes
+    import ctypes.wintypes
     
     # Use a simpler approach that's more permissive
     # This will allow typing in most applications
@@ -42,6 +43,41 @@ if sys.platform == 'win32':
             fg_window = GetForegroundWindow()
             if not fg_window:
                 return True  # When in doubt, allow typing
+            
+            # Check if application is in true full-screen mode (taskbar hidden)
+            # Get foreground window rectangle
+            window_rect = ctypes.wintypes.RECT()
+            ctypes.windll.user32.GetWindowRect(fg_window, ctypes.byref(window_rect))
+            
+            # Get work area (screen area without taskbar)
+            work_area = ctypes.wintypes.RECT()
+            ctypes.windll.user32.SystemParametersInfoW(
+                0x0030,  # SPI_GETWORKAREA
+                0, 
+                ctypes.byref(work_area), 
+                0
+            )
+            
+            # Get screen dimensions
+            screen_width = ctypes.windll.user32.GetSystemMetrics(0)  # SM_CXSCREEN
+            screen_height = ctypes.windll.user32.GetSystemMetrics(1)  # SM_CYSCREEN
+            
+            # Check if window covers full screen and extends beyond work area
+            # This indicates it's a true full-screen app that's covering the taskbar
+            is_true_fullscreen = (
+                window_rect.left <= 0 and
+                window_rect.top <= 0 and
+                window_rect.right >= screen_width and
+                window_rect.bottom >= screen_height and
+                (window_rect.bottom > work_area.bottom or
+                 window_rect.right > work_area.right or
+                 window_rect.left < work_area.left or
+                 window_rect.top < work_area.top)
+            )
+            
+            if is_true_fullscreen:
+                print(f"[DEBUG] Blocked typing in true full-screen application")
+                return False
                 
             # Get class name of the foreground window
             class_name = ctypes.create_unicode_buffer(256)
