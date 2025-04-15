@@ -68,9 +68,13 @@ Create a shortcut to the script in your Windows Startup folder:
 
 ## Logs
 
-- Transcriptions: `transcripts.log`
-- Application output: `output.log`
-- Errors: `error.log`
+The application generates the following local log files (not included in the repository):
+
+- Transcriptions: `transcripts.log` - Records all transcribed speech with timestamps
+- Application output: `output.log` - Contains general application status messages
+- Errors: `error.log` - Records any errors for troubleshooting
+
+All logs are stored in the same directory as the script.
 
 ## License
 
